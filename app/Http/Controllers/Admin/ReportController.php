@@ -128,38 +128,63 @@ private function gradesPdf(Request $request)
     return $pdf->download('grades_report_' . now()->format('Y-m-d') . '.pdf');
 }
 
-    private function attendanceReport(Request $request): StreamedResponse
-    {
-        $query = AttendanceRecord::with(['user.cadet', 'session']);
+    private function attendanceReport(Request $request)
+{
+    $request->validate([
+        'date_from' => 'nullable|date',
+        'date_to'   => 'nullable|date|after_or_equal:date_from',
+    ]);
 
-        if ($request->date_from) {
-            $query->whereHas('session', fn($q) => $q->where('session_date', '>=', $request->date_from));
-        }
-        if ($request->date_to) {
-            $query->whereHas('session', fn($q) => $q->where('session_date', '<=', $request->date_to));
-        }
+    $query = AttendanceRecord::with(['user.cadet', 'session']);
 
-        $records = $query->get();
-
-        $filename = 'attendance_report_' . now()->format('Y-m-d') . '.csv';
-
-        return response()->streamDownload(function () use ($records) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Student No.', 'Name', 'Date', 'Status', 'Time In', 'Time Out']);
-
-            foreach ($records as $r) {
-                fputcsv($handle, [
-                    $r->user->cadet->student_number ?? '—',
-                    ($r->user->cadet->last_name ?? '') . ', ' . ($r->user->cadet->first_name ?? ''),
-                    $r->session->session_date->format('Y-m-d'),
-                    ucfirst($r->status),
-                    $r->time_in ? \Carbon\Carbon::parse($r->time_in)->format('g:i A') : '—',
-                    $r->time_out ? \Carbon\Carbon::parse($r->time_out)->format('g:i A') : '—',
-                ]);
-            }
-            fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+    if ($request->filled('date_from')) {
+        $query->whereHas('session', fn($q) => $q->whereDate('session_date', '>=', $request->date_from));
     }
+    if ($request->filled('date_to')) {
+        $query->whereHas('session', fn($q) => $q->whereDate('session_date', '<=', $request->date_to));
+    }
+
+    // Alphabetical: last name, then first name, then session date
+    $records = $query->get()->sort(function ($a, $b) {
+        return strcasecmp($a->user->cadet->last_name ?? '', $b->user->cadet->last_name ?? '')
+            ?: strcasecmp($a->user->cadet->first_name ?? '', $b->user->cadet->first_name ?? '')
+            ?: ($a->session->session_date->timestamp <=> $b->session->session_date->timestamp);
+    })->values();
+
+    // Filename includes the date range
+    $from  = $request->date_from;
+    $to    = $request->date_to;
+    $range = ($from || $to)
+        ? ($from ?: 'start') . '_to_' . ($to ?: 'latest')
+        : 'all';
+    $baseName = "attendance_report_{$range}_" . now()->format('Y-m-d');
+
+    // PDF
+    if ($request->format === 'pdf') {
+        return Pdf::loadView('admin.reports.attendance_pdf', [
+            'records' => $records,
+            'from'    => $from,
+            'to'      => $to,
+        ])->setPaper('a4', 'portrait')->download($baseName . '.pdf');
+    }
+
+    // CSV
+        // CSV
+    return response()->streamDownload(function () use ($records) {
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, ['Student No.', 'Name', 'Date', 'Status']);
+
+        foreach ($records as $r) {
+            fputcsv($handle, [
+                $r->user->cadet->student_number ?? '—',
+                ($r->user->cadet->last_name ?? '') . ', ' . ($r->user->cadet->first_name ?? ''),
+                $r->session->session_date->format('Y-m-d'),
+                ucfirst($r->status),
+            ]);
+        }
+        fclose($handle);
+    }, $baseName . '.csv', ['Content-Type' => 'text/csv']);
+}
 
     private function enrollmentReport(Request $request): StreamedResponse
     {
