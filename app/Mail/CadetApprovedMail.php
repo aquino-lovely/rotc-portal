@@ -26,9 +26,9 @@ class CadetApprovedMail extends Mailable
     }
 
     public function content(): Content
-    {
-        return new Content(
-            view: 'emails.cadet-approved',
-        );
-    }
+{
+    return new Content(
+        markdown: 'emails.cadet-approved',
+    );
+}
 }
