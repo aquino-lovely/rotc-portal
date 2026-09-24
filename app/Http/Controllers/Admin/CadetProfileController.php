@@ -80,11 +80,27 @@ class CadetProfileController extends Controller
 
         $user->refresh();
 
+                   $emailSent = true;
+
         try {
             Mail::to($user->email)->send(new CadetApprovedMail($user, $temporaryPassword));
-        } catch (\Exception $e) {
-            // Mail not configured yet — skip during development
+        } catch (\Throwable $e) {
+            $emailSent = false;
+            Log::error('Cadet approval email failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
         }
+
+        $redirect = redirect()->route('admin.cadets.show', $user);
+
+        if ($emailSent) {
+            return $redirect->with('success', "{$user->cadet->full_name} has been approved and notified via email.");
+        }
+
+        return $redirect
+            ->with('warning', "{$user->cadet->full_name} was approved, but the email could not be sent. Give them the temporary password below in person.")
+            ->with('temporary_password', $temporaryPassword);  
 
        try {
     Mail::to($user->email)->send(new CadetApprovedMail($user, $temporaryPassword));

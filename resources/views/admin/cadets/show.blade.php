@@ -50,6 +50,15 @@
                 <div class="alert alert-error">{{ session('error') }}</div>
             @endif
 
+            @if (session('warning'))
+    <div style="background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:12px 16px; border-radius:8px; margin-bottom:16px;">
+        {{ session('warning') }}
+        @if (session('temporary_password'))
+            <br>Temporary password: <strong>{{ session('temporary_password') }}</strong>
+        @endif
+    </div>
+@endif
+
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <div>
                     <div class="page-title">Cadet Details</div>
