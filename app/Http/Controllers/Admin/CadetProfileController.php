@@ -1,0 +1,189 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Mail\CadetApprovedMail;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+
+class CadetProfileController extends Controller
+{
+    public function index(Request $request)
+    {
+        $query = User::where('role', 'cadet')->with('cadet');
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('username', 'like', "%{$search}%")
+                  ->orWhereHas('cadet', function ($c) use ($search) {
+                      $c->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('student_number', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $cadets = $query->latest()->paginate(15);
+
+        return view('admin.cadets.index', compact('cadets'));
+    }
+
+    /**
+     * Admin viewing a SPECIFIC cadet's profile by ID (admin/cadets/{user}).
+     */
+    public function show(User $user)
+    {
+        abort_unless($user->role === 'cadet', 404);
+        $user->load('cadet.beneficiary');
+        return view('admin.cadets.show', compact('user'));
+    }
+
+    /**
+     * A cadet viewing their OWN profile (self-service, no {id} in the route).
+     */
+    public function showOwn(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user->role === 'cadet', 404);
+        $user->load('cadet.beneficiary');
+        return view('admin.cadets.show', compact('user'));
+    }
+
+    public function approve(Request $request, User $user)
+    {
+
+        if ($user->role !== 'cadet' || $user->status !== 'pending') {
+            return back()->with('error', 'This cadet is not pending approval.');
+        }
+
+        $temporaryPassword = Str::password(10);
+
+        DB::transaction(function () use ($user, $request, $temporaryPassword) {
+            $user->update([
+                'password'             => Hash::make($temporaryPassword),
+                'status'               => 'approved',
+                'must_change_password' => true,
+            ]);
+
+            $user->cadet->update([
+                'rank'       => $request->input('rank', 'Private'),
+                'company'    => $request->input('company'),
+                'cadet_type' => $request->input('cadet_type', 'private'),
+            ]);
+        });
+
+        $user->refresh();
+
+        try {
+            Mail::to($user->email)->send(new CadetApprovedMail($user, $temporaryPassword));
+        } catch (\Exception $e) {
+            // Mail not configured yet — skip during development
+        }
+
+       try {
+    Mail::to($user->email)->send(new CadetApprovedMail($user, $temporaryPassword));
+} catch (\Exception $e) {
+    // Mail not configured yet — skip during development
+}
+
+return redirect()
+    ->route('admin.cadets.show', $user)
+    ->with('success', "{$user->cadet->full_name} has been approved and notified via email.");
+
+        $request->validate([
+            'rank'        => ['nullable', 'string'],
+            'company'     => ['nullable', 'string'],
+            'new_company' => ['nullable', 'string', 'max:50', 'required_if:company,__other__'],
+            'platoon'     => ['nullable', 'string', 'in:First Platoon,Second Platoon'],
+        ]);
+
+        $cadet = $user->cadet;
+
+        // Resolve the actual company name (handles the "Other" free-text case)
+        $company = $cadet->company;
+        if ($request->filled('company')) {
+            $company = $request->input('company') === '__other__'
+                ? trim($request->input('new_company'))
+                : $request->input('company');
+        }
+
+        $platoon = $request->filled('platoon') ? $request->input('platoon') : $cadet->platoon;
+
+        // Platoon is required whenever a company is set
+        if ($company && !$platoon) {
+            return back()->with('error', 'Please select a platoon for this company.')->withInput();
+        }
+
+        // Enforce 37-cadet cap per company + platoon
+        if ($company && $platoon) {
+            $isChangingCompanyOrPlatoon = ($company !== $cadet->company) || ($platoon !== $cadet->platoon);
+
+            if ($isChangingCompanyOrPlatoon) {
+                $count = \App\Models\Cadet::where('company', $company)
+                    ->where('platoon', $platoon)
+                    ->where('id', '!=', $cadet->id)
+                    ->count();
+
+                if ($count >= 37) {
+                    return back()->with('error', "{$company} {$platoon} is already full (37/37 cadets).")->withInput();
+                }
+            }
+        }
+
+        $changed = [];
+
+        DB::transaction(function () use ($cadet, $request, $company, $platoon, &$changed) {
+            $updates = [];
+
+            if ($request->filled('rank') && $cadet->rank !== $request->input('rank')) {
+                $updates['rank'] = $request->input('rank');
+                $changed[] = 'Rank';
+            }
+
+            if ($cadet->company !== $company) {
+                $updates['company'] = $company;
+                $changed[] = 'Company';
+            }
+
+            if ($cadet->platoon !== $platoon) {
+                $updates['platoon'] = $platoon;
+                $changed[] = 'Platoon';
+            }
+
+            if (!empty($updates)) {
+                $cadet->update($updates);
+            }
+        });
+
+        if (empty($changed)) {
+            return back()->with('error', 'No changes were made.');
+        }
+
+        return redirect()
+            ->route('admin.cadets.show', $user)
+            ->with('success', implode(', ', $changed) . ' updated successfully.');
+    }
+    
+    public function reject(Request $request, User $user)
+    {
+        $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if ($user->role !== 'cadet' || $user->status !== 'pending') {
+            return back()->with('error', 'This cadet is not pending approval.');
+        }
+
+        $user->update(['status' => 'rejected']);
+
+        return redirect()
+            ->route('admin.cadets.index')
+            ->with('success', 'Registration has been rejected.');
+    }
+}
