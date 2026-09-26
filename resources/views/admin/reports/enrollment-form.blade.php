@@ -49,6 +49,9 @@
         }
         $blood    = (($cadet->blood_type ?? '') === 'Unknown') ? '' : ($cadet->blood_type ?? '');
         $ben      = $cadet->beneficiary; // hasOne relationship on the Cadet model
+
+
+    $cadetName = trim(($cadet->last_name ?? '') . ', ' . ($cadet->first_name ?? '') . ' ' . ($cadet->middle_name ?? ''));
     @endphp
 
     <div @if(!$loop->last) style="page-break-after: always;" @endif>
@@ -60,8 +63,8 @@
 
         <table style="margin-top:8px;">
             <tr>
-                <td style="width:15%; text-align:left; vertical-align:middle;">
-                    @if($leftLogo) <img src="{{ $leftLogo }}" style="width:65px;"> @endif
+                <td style="width:15%; text-align:right; vertical-align:middle;">
+                    @if($leftLogo) <img src="{{ $leftLogo }}" style="width:65px; display:block; margin-left:auto;"> @endif
                 </td>
                 <td class="center" style="width:70%; vertical-align:middle; line-height:1.4;">
                     <div style="letter-spacing:4px; font-size:9px;">HEADQUARTERS</div>
@@ -70,8 +73,8 @@
                     <div style="font-size:9px;">104TH (PGN-W) COMMUNITY DEFENSE CENTER, 1RCDG, RESCOM, PA</div>
                     <div style="font-size:9px;">Brgy. Bolaney, Alaminos City, Pangasinan</div>
                 </td>
-                <td style="width:15%; text-align:right; vertical-align:middle;">
-                    @if($rightLogo) <img src="{{ $rightLogo }}" style="width:65px;"> @endif
+                <td style="width:15%; text-align:left; vertical-align:middle;">
+                    @if($rightLogo) <img src="{{ $rightLogo }}" style="width:65px; display:block; margin-right:auto;"> @endif
                 </td>
             </tr>
         </table>
@@ -227,17 +230,22 @@
         </div>
 
         {{-- ===== SIGNATURES ===== --}}
-        <table style="margin-top:55px;">
-            <tr>
-                <td style="width:38%; border-top:1px solid #000; text-align:center; padding-top:3px;">
-                    Administering Officer
-                </td>
-                <td style="width:24%;"></td>
-                <td style="width:38%; border-top:1px solid #000; text-align:center; padding-top:3px;">
-                    (Signature over printed name)
-                </td>
-            </tr>
-        </table>
+<table style="margin-top:55px;">
+    <tr>
+        <td style="width:38%; text-align:center;">
+            <span class="sig-name">{{ strtoupper($professor ?? '') }}</span><br>
+            <span style="border-top:1px solid #000; display:block; padding-top:3px;">
+                Administering Officer
+            </span>
+        </td>
+        <td style="width:24%;"></td>
+        <td style="width:38%; text-align:center;">
+    <span class="sig-name">{{ strtoupper($cadetName) }}</span>
+    <span style="border-top:1px solid #000; display:block; padding-top:3px;">
+        Signature over Printed Name
+    </span>
+</td>
+</table>
 
     </div>
 @endforeach

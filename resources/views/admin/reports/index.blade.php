@@ -87,6 +87,14 @@
                            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
                 </div>
 
+                <div style="margin-bottom:16px; display:none;" id="administering-officer-field">
+                    <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
+                        Administering Officer
+                    </label>
+                    <input type="text" name="administering_officer" placeholder="e.g. Juan Dela Cruz"
+                           style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+                </div>
+
                 <div style="margin-bottom:24px;">
                     <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
                         Format
@@ -110,11 +118,13 @@
     const reportType   = document.querySelector('[name="report_type"]');
     const settingField = document.getElementById('setting-field');
     const dateField    = document.getElementById('date-range-field');
+    const officerField = document.getElementById('administering-officer-field');
 
     function toggleFields() {
         const type = reportType.value;
         settingField.style.display = type === 'grades' ? 'block' : 'none';
         dateField.style.display    = type === 'attendance' ? 'block' : 'none';
+        officerField.style.display = type === 'enrollment' ? 'block' : 'none';
     }
 
     reportType.addEventListener('change', toggleFields);

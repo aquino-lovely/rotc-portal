@@ -25,14 +25,14 @@ class ReportController extends Controller
 
 public function generate(Request $request)
 {
-    $request->validate([
-        'report_type'           => ['required', 'in:attendance,grades,enrollment'],
-        'format'                => ['nullable', 'in:csv,pdf'],
-        'date_from'              => ['nullable', 'date'],
-        'date_to'                => ['nullable', 'date', 'after_or_equal:date_from'],
-        'enrollment_setting_id'  => ['required_if:report_type,grades', 'integer', 'exists:enrollment_settings,id'],
-        'professor'              => ['required_if:report_type,grades', 'string', 'max:255'],
-    ]);
+   $request->validate([
+    'report_type'           => ['required', 'in:attendance,grades,enrollment'],
+    'format'                => ['nullable', 'in:csv,pdf'],
+    'date_from'              => ['nullable', 'date'],
+    'date_to'                => ['nullable', 'date', 'after_or_equal:date_from'],
+    'enrollment_setting_id'  => ['nullable', 'required_if:report_type,grades', 'integer', 'exists:enrollment_settings,id'],
+    'professor'              => ['nullable', 'required_if:report_type,grades', 'string', 'max:255'],
+]);
 
     return match ($request->report_type) {
         'attendance' => $this->attendanceReport($request),
@@ -236,7 +236,10 @@ private function gradesPdf(Request $request)
         return back()->with('error', 'No enrollment records found for the selected dates.');
     }
 
-   return Pdf::loadView('admin.reports.enrollment-form', compact('enrollments'))
+    return Pdf::loadView('admin.reports.enrollment-form', [
+        'enrollments' => $enrollments,
+        'professor'   => $request->administering_officer,
+    ])
         ->setPaper('a4', 'portrait')
         ->download('enrollment_forms_' . now()->format('Y-m-d') . '.pdf');
 }
