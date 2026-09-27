@@ -192,87 +192,89 @@
                                                 </div>
                         @endif  {{-- closes beneficiary @if --}}
 
-                                               {{-- Rank & Company assignment --}}
-                        <div class="section-title">Rank &amp; Company Assignment</div>
-                        <form method="POST" action="{{ route('admin.cadets.rank-company', $user) }}">
-                            @csrf
-                            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                                             {{-- Rank & Company assignment --}}
+@if(auth()->user()->role === 'admin')
+<div class="section-title">Rank &amp; Company Assignment</div>
+<form method="POST" action="{{ route('admin.cadets.rank-company', $user) }}">
+    @csrf
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
 
-                                <div style="flex:1;">
-                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Rank</label>
-                                    <select name="rank" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
-                                        <option value="">— No change —</option>
-                                        @foreach(['Cdt. 2nd LT','Cdt. 1st LT'] as $r)
-                                            <option value="{{ $r }}" @selected($user->cadet?->rank === $r)>{{ $r }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+        <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Rank</label>
+            <select name="rank" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+                <option value="">— No change —</option>
+                @foreach(['Cdt. 2nd LT','Cdt. 1st LT'] as $r)
+                    <option value="{{ $r }}" @selected($user->cadet?->rank === $r)>{{ $r }}</option>
+                @endforeach
+            </select>
+        </div>
 
-                                <div style="flex:1;">
-                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Company</label>
-                                    @php $knownCompanies = ['Alpha','Bravo','Charlie','Delta']; @endphp
-                                    <select name="company" id="companySelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
-                                        <option value="">— No change —</option>
-                                        @foreach($knownCompanies as $c)
-                                            <option value="{{ $c }}" @selected($user->cadet?->company === $c)>{{ $c }}</option>
-                                        @endforeach
-                                        <option value="__other__" @selected($user->cadet?->company && !in_array($user->cadet->company, $knownCompanies))>
-                                            Other (new company)
-                                        </option>
-                                    </select>
-                                </div>
+        <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Company</label>
+            @php $knownCompanies = ['Alpha','Bravo','Charlie','Delta']; @endphp
+            <select name="company" id="companySelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+                <option value="">— No change —</option>
+                @foreach($knownCompanies as $c)
+                    <option value="{{ $c }}" @selected($user->cadet?->company === $c)>{{ $c }}</option>
+                @endforeach
+                <option value="__other__" @selected($user->cadet?->company && !in_array($user->cadet->company, $knownCompanies))>
+                    Other (new company)
+                </option>
+            </select>
+        </div>
 
-                                <div style="flex:1; display:none;" id="newCompanyWrapper">
-                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">New Company Name</label>
-                                    <input type="text" name="new_company" id="newCompanyInput"
-                                           placeholder="e.g. Echo"
-                                           value="{{ old('new_company', ($user->cadet?->company && !in_array($user->cadet->company, $knownCompanies)) ? $user->cadet->company : '') }}"
-                                           style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
-                                </div>
+        <div style="flex:1; display:none;" id="newCompanyWrapper">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">New Company Name</label>
+            <input type="text" name="new_company" id="newCompanyInput"
+                   placeholder="e.g. Echo"
+                   value="{{ old('new_company', ($user->cadet?->company && !in_array($user->cadet->company, $knownCompanies)) ? $user->cadet->company : '') }}"
+                   style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+        </div>
 
-                                <div style="flex:1;" id="platoonWrapper">
-                                    <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Platoon</label>
-                                    <select name="platoon" id="platoonSelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
-                                        <option value="">— No change —</option>
-                                        <option value="First Platoon" @selected($user->cadet?->platoon === 'First Platoon')>First Platoon</option>
-                                        <option value="Second Platoon" @selected($user->cadet?->platoon === 'Second Platoon')>Second Platoon</option>
-                                    </select>
-                                    <div id="platoonHint" style="font-size:11px; color:#888; margin-top:3px;"></div>
-                                </div>
+        <div style="flex:1;" id="platoonWrapper">
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Platoon</label>
+            <select name="platoon" id="platoonSelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+                <option value="">— No change —</option>
+                <option value="First Platoon" @selected($user->cadet?->platoon === 'First Platoon')>First Platoon</option>
+                <option value="Second Platoon" @selected($user->cadet?->platoon === 'Second Platoon')>Second Platoon</option>
+            </select>
+            <div id="platoonHint" style="font-size:11px; color:#888; margin-top:3px;"></div>
+        </div>
 
-                            </div>
+    </div>
 
-                            <button type="submit" class="btn-green">Save Rank &amp; Company</button>
-                        </form>
+    <button type="submit" class="btn-green">Save Rank &amp; Company</button>
+</form>
 
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const companySelect     = document.getElementById('companySelect');
-                            const newCompanyWrapper = document.getElementById('newCompanyWrapper');
-                            const newCompanyInput   = document.getElementById('newCompanyInput');
-                            const platoonWrapper    = document.getElementById('platoonWrapper');
-                            const platoonSelect     = document.getElementById('platoonSelect');
-                            const platoonHint       = document.getElementById('platoonHint');
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const companySelect     = document.getElementById('companySelect');
+    const newCompanyWrapper = document.getElementById('newCompanyWrapper');
+    const newCompanyInput   = document.getElementById('newCompanyInput');
+    const platoonWrapper    = document.getElementById('platoonWrapper');
+    const platoonSelect     = document.getElementById('platoonSelect');
+    const platoonHint       = document.getElementById('platoonHint');
 
-                            function refresh() {
-                                const isOther = companySelect.value === '__other__';
-                                const hasCompany = companySelect.value !== '' && companySelect.value !== '__other__';
+    function refresh() {
+        const isOther = companySelect.value === '__other__';
+        const hasCompany = companySelect.value !== '' && companySelect.value !== '__other__';
 
-                                newCompanyWrapper.style.display = isOther ? 'block' : 'none';
-                                newCompanyInput.required = isOther;
+        newCompanyWrapper.style.display = isOther ? 'block' : 'none';
+        newCompanyInput.required = isOther;
 
-                                const needsPlatoon = hasCompany || isOther;
-                                platoonWrapper.style.display = needsPlatoon ? 'block' : 'none';
-                                platoonSelect.required = needsPlatoon;
-                                platoonHint.textContent = needsPlatoon ? 'Required. Max 37 cadets per platoon.' : '';
+        const needsPlatoon = hasCompany || isOther;
+        platoonWrapper.style.display = needsPlatoon ? 'block' : 'none';
+        platoonSelect.required = needsPlatoon;
+        platoonHint.textContent = needsPlatoon ? 'Required. Max 37 cadets per platoon.' : '';
 
-                                if (!needsPlatoon) platoonSelect.value = '';
-                            }
+        if (!needsPlatoon) platoonSelect.value = '';
+    }
 
-                            companySelect.addEventListener('change', refresh);
-                            refresh();
-                        });
-                        </script>
+    companySelect.addEventListener('change', refresh);
+    refresh();
+});
+</script>
+@endif
 
                 </div>
             </div>

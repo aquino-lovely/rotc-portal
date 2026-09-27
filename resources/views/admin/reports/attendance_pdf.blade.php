@@ -16,8 +16,7 @@
     <div class="sub">
         Date range:
         {{ $from ?: 'Start' }} to {{ $to ?: 'Latest' }}
-        | Generated: {{ now()->format('Y-m-d g:i A') }}
-    </div>
+           </div>
 
         <table>
         <thead>

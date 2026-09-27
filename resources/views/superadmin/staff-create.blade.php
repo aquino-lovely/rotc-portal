@@ -8,13 +8,13 @@
         body { font-family: Arial, sans-serif; background: #f4f6f4; color: #222; }
 
         .top-bar {
-            background: #2f6b2f;
-            color: #fff;
+            background: #4f8a4f;
+            color:#f4f4f4;
             padding: 18px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 4px solid #e6c34a;
+             border-bottom: 6px solid #e8c440;
         }
         .top-bar h1 { font-size: 22px; }
         .top-bar-right { display: flex; align-items: center; gap: 16px; }

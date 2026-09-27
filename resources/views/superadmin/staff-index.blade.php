@@ -8,13 +8,13 @@
         body { font-family: Arial, sans-serif; background: #f4f6f4; color: #222; }
 
         .top-bar {
-            background: #2f6b2f;
-            color: #fff;
+            background: #4f8a4f;
+            color: #f4f4f4;
             padding: 18px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 4px solid #e6c34a;
+            border-bottom: 6px solid #e8c440;
         }
         .top-bar h1 { font-size: 22px; }
         .top-bar-right { display: flex; align-items: center; gap: 16px; }
@@ -35,11 +35,11 @@
         .staff-wrap { max-width: 900px; margin: 32px auto; padding: 0 24px; }
         .staff-title { font-size: 24px; font-weight: bold; color: #2f6b2f; margin-bottom: 20px; }
         .staff-alert { background: #e3f1e3; color: #2f5a2f; border: 1px solid #b9dcb9; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
-        .staff-btn { display: inline-block; background: #2f6b2f; color: #fff; padding: 10px 20px; border-radius: 24px; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
+        .staff-btn { display: inline-block; background:#4f8a4f; color: #fff; padding: 10px 20px; border-radius: 24px; text-decoration: none; font-size: 14px; margin-bottom: 20px; }
         .staff-btn:hover { background: #255525; }
         .staff-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
         .staff-table th, .staff-table td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 14px; }
-        .staff-table th { background: #eef5ee; color: #2f6b2f; }
+        .staff-table th { background: #eef5ee; color: #4f8a4f; }
         .staff-table tr:last-child td { border-bottom: none; }
 
         .action-cell { display: flex; gap: 10px; }
@@ -49,7 +49,7 @@
         }
         .delete-btn:hover { background: #a5301f; }
         .edit-link {
-            background: #2f6b2f; color: #fff; padding: 6px 14px;
+            background: #4f8a4f; color: #fff; padding: 6px 14px;
             border-radius: 16px; font-size: 13px; text-decoration: none;
         }
         .edit-link:hover { background: #255525; }
