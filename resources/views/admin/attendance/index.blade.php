@@ -111,7 +111,9 @@
                     <a href="{{ route('admin.attendance.excuses') }}" class="btn-green" style="background:#6a9a6a;">
                         📋 Excuse Requests
                     </a>
-                    <button class="btn-green">+ Export Report</button>
+                   <a href="{{ route('admin.attendance.export', ['date' => $date]) }}" class="btn-green" style="text-decoration:none; display:inline-block;">
+    + Export Report
+</a>
                 </div>
 </div>
 

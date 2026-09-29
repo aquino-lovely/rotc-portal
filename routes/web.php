@@ -57,9 +57,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/serial-numbers', [SerialNumberController::class, 'index'])->name('admin.serial.index');
     Route::post('/serial-numbers', [SerialNumberController::class, 'update'])->name('admin.serial.update');
-    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
-    Route::post('/reports/generate', [ReportController::class, 'generate'])->name('admin.reports.generate');
-    Route::post('/enrollment/manual/{user}', [AdminEnrollmentController::class, 'enrollManually'])->name('admin.enrollment.manual');
+       Route::post('/enrollment/manual/{user}', [AdminEnrollmentController::class, 'enrollManually'])->name('admin.enrollment.manual');
     Route::post('/enrollment-settings/{setting}/finalize', [AdminEnrollmentController::class, 'finalizeTerm'])->name('admin.enrollment.settings.finalize');
 Route::post('/enrollment-settings/{setting}/unfinalize', [AdminEnrollmentController::class, 'unfinalizeTerm'])->name('admin.enrollment.settings.unfinalize');
     
@@ -72,10 +70,13 @@ Route::middleware(['auth', 'role:admin,S1'])->prefix('admin')->group(function ()
     Route::post('/cadets/{user}/rank-company', [CadetProfileController::class, 'updateRankCompany'])->name('admin.cadets.rank-company');
 
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('admin.attendance.index');
+    Route::get('/attendance/export', [AttendanceController::class, 'exportPdf'])->name('admin.attendance.export');
     Route::post('/attendance/{userId}/status', [AttendanceController::class, 'updateStatus'])->name('admin.attendance.updateStatus');
     Route::get('/excuse-requests', [AttendanceController::class, 'excuseRequests'])->name('admin.attendance.excuses');
     Route::post('/excuse-requests/{excuseRequest}/approve', [AttendanceController::class, 'approveExcuse'])->name('admin.attendance.excuses.approve');
     Route::post('/excuse-requests/{excuseRequest}/reject', [AttendanceController::class, 'rejectExcuse'])->name('admin.attendance.excuses.reject');
+     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
+    Route::post('/reports/generate', [ReportController::class, 'generate'])->name('admin.reports.generate');
 });
 
 

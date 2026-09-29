@@ -25,12 +25,14 @@ class ReportController extends Controller
 
 public function generate(Request $request)
 {
-   $request->validate([
-    'report_type'           => ['required', 'in:attendance,grades,enrollment'],
-    'format'                => ['nullable', 'in:csv,pdf'],
+    $request->validate([
+    'report_type'            => ['required', 'in:attendance,grades,enrollment'],
+    'format'                 => ['nullable', 'in:csv,pdf'],
     'date_from'              => ['nullable', 'date'],
     'date_to'                => ['nullable', 'date', 'after_or_equal:date_from'],
     'enrollment_setting_id'  => ['nullable', 'required_if:report_type,grades', 'integer', 'exists:enrollment_settings,id'],
+    'attendance_setting_id'  => ['nullable', 'required_if:report_type,attendance', 'integer', 'exists:enrollment_settings,id'],
+    'training_day'           => ['nullable', 'date'],
     'professor'              => ['nullable', 'required_if:report_type,grades', 'string', 'max:255'],
 ]);
 
@@ -128,64 +130,79 @@ private function gradesPdf(Request $request)
     return $pdf->download('grades_report_' . now()->format('Y-m-d') . '.pdf');
 }
 
-    private function attendanceReport(Request $request)
+   private function attendanceReport(Request $request)
 {
-    $request->validate([
-        'date_from' => 'nullable|date',
-        'date_to'   => 'nullable|date|after_or_equal:date_from',
-    ]);
+    $setting = EnrollmentSetting::findOrFail($request->attendance_setting_id);
 
-    $query = AttendanceRecord::with(['user.cadet', 'session']);
+    // Semester window. Adjust if EnrollmentSetting has its own start/end dates.
+    [$startYear] = explode('-', $setting->school_year);
+    $startYear = (int) $startYear;
 
-    if ($request->filled('date_from')) {
-        $query->whereHas('session', fn($q) => $q->whereDate('session_date', '>=', $request->date_from));
+    if ($setting->semester === 'First Semester') {
+        $from = \Carbon\Carbon::create($startYear, 8, 1)->startOfDay();
+        $to   = \Carbon\Carbon::create($startYear, 12, 31)->endOfDay();
+    } else {
+        $from = \Carbon\Carbon::create($startYear + 1, 1, 1)->startOfDay();
+        $to   = \Carbon\Carbon::create($startYear + 1, 5, 31)->endOfDay();
     }
-    if ($request->filled('date_to')) {
-        $query->whereHas('session', fn($q) => $q->whereDate('session_date', '<=', $request->date_to));
+
+    $trainingDay = null;
+    if ($request->filled('training_day')) {
+        $trainingDay = \Carbon\Carbon::parse($request->training_day);
+
+        if (! $trainingDay->isSaturday()) {
+            return back()->with('error', 'Training day must be a Saturday.');
+        }
+        if (! $trainingDay->between($from, $to)) {
+            return back()->with('error', 'Training day is outside the selected semester.');
+        }
     }
 
-    // Alphabetical: last name, then first name, then session date
-    $records = $query->get()->sort(function ($a, $b) {
-        return strcasecmp($a->user->cadet->last_name ?? '', $b->user->cadet->last_name ?? '')
-            ?: strcasecmp($a->user->cadet->first_name ?? '', $b->user->cadet->first_name ?? '')
-            ?: ($a->session->session_date->timestamp <=> $b->session->session_date->timestamp);
-    })->values();
+    $query = AttendanceRecord::with(['user.cadet', 'session'])
+        ->whereHas('session', function ($q) use ($from, $to, $trainingDay) {
+            if ($trainingDay) {
+                $q->whereDate('session_date', $trainingDay->toDateString());
+            } else {
+                $q->whereBetween('session_date', [$from, $to]);
+            }
+        });
 
-    // Filename includes the date range
-    $from  = $request->date_from;
-    $to    = $request->date_to;
-    $range = ($from || $to)
-        ? ($from ?: 'start') . '_to_' . ($to ?: 'latest')
-        : 'all';
-    $baseName = "attendance_report_{$range}_" . now()->format('Y-m-d');
+    // Saturdays only, then alphabetical by last name, first name, date
+    $records = $query->get()
+        ->filter(fn ($r) => $r->session->session_date->isSaturday())
+        ->sort(function ($a, $b) {
+            return strcasecmp($a->user->cadet->last_name ?? '', $b->user->cadet->last_name ?? '')
+                ?: strcasecmp($a->user->cadet->first_name ?? '', $b->user->cadet->first_name ?? '')
+                ?: ($a->session->session_date->timestamp <=> $b->session->session_date->timestamp);
+        })->values();
 
-    // PDF
+    $semesterLabel = "{$setting->semester}, S.Y. {$setting->school_year}";
+    $dayPart  = $trainingDay ? $trainingDay->format('Y-m-d') : 'all-saturdays';
+    $baseName = 'attendance_report_' . \Illuminate\Support\Str::slug($semesterLabel) . "_{$dayPart}_" . now()->format('Y-m-d');
+
     if ($request->format === 'pdf') {
         return Pdf::loadView('admin.reports.attendance_pdf', [
-            'records' => $records,
-            'from'    => $from,
-            'to'      => $to,
+            'records'       => $records,
+            'semesterLabel' => $semesterLabel,
+            'trainingDay'   => $trainingDay,
         ])->setPaper('a4', 'portrait')->download($baseName . '.pdf');
     }
 
-    // CSV
-        // CSV
     return response()->streamDownload(function () use ($records) {
         $handle = fopen('php://output', 'w');
-        fputcsv($handle, ['Student No.', 'Name', 'Date', 'Status']);
+        fputcsv($handle, ['Student No.', 'Name', 'Training Day', 'Status']);
 
         foreach ($records as $r) {
             fputcsv($handle, [
                 $r->user->cadet->student_number ?? '—',
                 ($r->user->cadet->last_name ?? '') . ', ' . ($r->user->cadet->first_name ?? ''),
-                $r->session->session_date->format('Y-m-d'),
+                $r->session->session_date->format('Y-m-d (D)'),
                 ucfirst($r->status),
             ]);
         }
         fclose($handle);
     }, $baseName . '.csv', ['Content-Type' => 'text/csv']);
 }
-
     private function enrollmentReport(Request $request): StreamedResponse
     {
         $query = Enrollment::with(['user.cadet', 'setting']);

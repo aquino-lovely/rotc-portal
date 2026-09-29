@@ -9,6 +9,7 @@ use App\Models\EnrollmentSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\ExcuseRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AttendanceController extends Controller
 {
@@ -123,4 +124,42 @@ class AttendanceController extends Controller
         $excuseRequest->update(['status' => 'rejected']);
         return back()->with('success', 'Excuse request rejected.');
     }
+
+    public function exportPdf(Request $request)
+{
+    $setting = EnrollmentSetting::getActive();
+    $date    = $request->input('date', now()->toDateString());
+
+    $session = $setting
+        ? AttendanceSession::where('enrollment_setting_id', $setting->id)
+            ->where('session_date', $date)
+            ->first()
+        : null;
+
+    $cadets = User::where('role', 'cadet')
+        ->where('status', 'approved')
+        ->whereHas('enrollments', function ($q) use ($setting) {
+            $q->where('enrollment_setting_id', $setting?->id ?? 0);
+        })
+        ->with('cadet')
+        ->get();
+
+    $records = $session
+        ? AttendanceRecord::where('attendance_session_id', $session->id)
+            ->get()->keyBy('user_id')
+        : collect();
+
+    $total   = $cadets->count();
+    $present = $records->where('status', 'present')->count();
+    $absent  = $records->where('status', 'absent')->count();
+    $late    = $records->where('status', 'late')->count();
+    $excused = $records->where('status', 'excused')->count();
+
+    $pdf = Pdf::loadView('admin.attendance.export-pdf', compact(
+        'setting', 'cadets', 'records', 'date',
+        'total', 'present', 'absent', 'late', 'excused'
+    ))->setPaper('a4', 'portrait');
+
+    return $pdf->download('Attendance_Report_' . $date . '.pdf');
+}
 }
