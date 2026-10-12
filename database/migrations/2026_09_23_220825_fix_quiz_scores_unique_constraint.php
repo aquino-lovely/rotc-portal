@@ -6,29 +6,38 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private string $old = 'quiz_scores_user_id_enrollment_setting_id_quiz_number_unique';
+    private string $new = 'quiz_scores_user_setting_term_quiznum_unique';
+
     public function up(): void
     {
-        Schema::table('quiz_scores', function (Blueprint $table) {
-            // Drop the old constraint that's missing `term`
-            $table->dropUnique('quiz_scores_user_id_enrollment_setting_id_quiz_number_unique');
+        // Add the new unique first, so the foreign keys always have an index to use
+        if (! Schema::hasIndex('quiz_scores', $this->new)) {
+            Schema::table('quiz_scores', function (Blueprint $table) {
+                $table->unique(['user_id', 'enrollment_setting_id', 'term', 'quiz_number'], $this->new);
+            });
+        }
 
-            // Recreate it correctly, including term
-            $table->unique(
-                ['user_id', 'enrollment_setting_id', 'term', 'quiz_number'],
-                'quiz_scores_user_setting_term_quiznum_unique'
-            );
-        });
+        // Drop the old one only if it still exists
+        if (Schema::hasIndex('quiz_scores', $this->old)) {
+            Schema::table('quiz_scores', function (Blueprint $table) {
+                $table->dropUnique($this->old);
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('quiz_scores', function (Blueprint $table) {
-            $table->dropUnique('quiz_scores_user_setting_term_quiznum_unique');
+        if (! Schema::hasIndex('quiz_scores', $this->old)) {
+            Schema::table('quiz_scores', function (Blueprint $table) {
+                $table->unique(['user_id', 'enrollment_setting_id', 'quiz_number'], $this->old);
+            });
+        }
 
-            $table->unique(
-                ['user_id', 'enrollment_setting_id', 'quiz_number'],
-                'quiz_scores_user_id_enrollment_setting_id_quiz_number_unique'
-            );
-        });
+        if (Schema::hasIndex('quiz_scores', $this->new)) {
+            Schema::table('quiz_scores', function (Blueprint $table) {
+                $table->dropUnique($this->new);
+            });
+        }
     }
 };

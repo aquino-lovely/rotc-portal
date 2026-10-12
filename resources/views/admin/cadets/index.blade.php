@@ -4,8 +4,29 @@
     <meta charset="UTF-8">
     <title>Cadet Profiles - Alaminos-Infanta ROTC Portal</title>
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <style>
+    .btn-view {
+        display: inline-block;
+        background: #2f5d34;
+        color: #fff;
+        padding: 7px 16px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background 0.15s;
+    }
+    .btn-view:hover {
+        background: #244a29;
+    }
+</style>
 </head>
 <body>
+@php
+    $isS1 = in_array(auth()->user()->role, ['S1', 'deputy_s1']);
+@endphp
 
 <div class="app-shell" style="flex-direction: column;">
 
@@ -53,6 +74,8 @@
                     </form>
                 </div>
 
+   
+
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -60,7 +83,9 @@
                             <th>NAME</th>
                             <th>USERNAME</th>
                             <th>COURSE</th>
-                            <th>STATUS</th>
+                            @if($isS1)
+                                <th>STATUS</th>
+                            @endif
                             <th>ACTION</th>
                         </tr>
                     </thead>
@@ -70,24 +95,23 @@
                             <td>{{ $cadet->cadet->student_number ?? '—' }}</td>
                             <td>{{ $cadet->cadet->last_name ?? '' }}, {{ $cadet->cadet->first_name ?? '' }}</td>
                             <td>{{ $cadet->username }}</td>
-                            <td>{{ $cadet->cadet->course ?? '—' }}</td>
-                            <td>
-                                <span class="status-badge status-{{ $cadet->status }}">
-                                    {{ ucfirst($cadet->status) }}
-                                </span>
-                            </td>
-                            <td>
-                                <a href="{{ route('admin.cadets.show', $cadet) }}"
-                                   class="btn-green" style="font-size:12px; padding:6px 12px;">
-                                    View
-                                </a>
-                            </td>
+                           <td>{{ $cadet->cadet->course ?? '—' }}</td>
+@if($isS1)
+<td>
+    <span class="status-badge status-{{ $cadet->status }}">
+        {{ ucfirst($cadet->status) }}
+    </span>
+</td>
+@endif
+<td>
+  <a href="{{ route('admin.cadets.show', $cadet) }}" class="btn-view">View</a>
+</td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" style="text-align:center; color:#666; padding:30px;">
-                                No cadets found.
-                            </td>
+                           <td colspan="{{ $isS1 ? 6 : 5 }}" style="text-align:center; color:#666; padding:30px;">
+    No cadets found.
+</td>
                         </tr>
                         @endforelse
                     </tbody>

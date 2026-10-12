@@ -7,29 +7,42 @@ use App\Models\Cadet;   // check this matches your cadet model's name
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\EnrollmentSetting;
 
 class SerialNumberController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = User::where('role', 'cadet')
-            ->where('status', 'approved')
-            ->with('cadet');
+{
+    $schoolYears = EnrollmentSetting::select('school_year')
+        ->distinct()->orderByDesc('school_year')->pluck('school_year');
 
-        if ($search = $request->input('search')) {
-            $query->whereHas('cadet', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('student_number', 'like', "%{$search}%")
-                  ->orWhere('serial_number', 'like', "%{$search}%");
-            });
-        }
+    // Defaults to the active school year; "all" shows every batch
+    $schoolYear = $request->input('school_year', EnrollmentSetting::getActive()?->school_year);
 
-        $cadets = $query->latest()->paginate(20);
+    $query = User::where('role', 'cadet')
+        ->where('status', 'approved')
+        ->with('cadet');
 
-        return view('admin.serial.index', compact('cadets'));
+    if ($schoolYear && $schoolYear !== 'all') {
+        $query->whereHas('enrollments', function ($e) use ($schoolYear) {
+            $e->where('status', 'finalized')
+              ->whereHas('setting', fn ($s) => $s->where('school_year', $schoolYear));
+        });
     }
 
+    if ($search = $request->input('search')) {
+        $query->whereHas('cadet', function ($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
+              ->orWhere('last_name', 'like', "%{$search}%")
+              ->orWhere('student_number', 'like', "%{$search}%")
+              ->orWhere('serial_number', 'like', "%{$search}%");
+        });
+    }
+
+    $cadets = $query->latest()->paginate(20);
+
+    return view('admin.serial.index', compact('cadets', 'schoolYears', 'schoolYear'));
+}
     public function update(Request $request)
     {
         // 1. Normalize: trim + uppercase, empty -> null (keys are preserved)

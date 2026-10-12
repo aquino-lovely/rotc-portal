@@ -15,7 +15,10 @@
         .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
-<body>
+<body> 
+   @php
+    $isS1 = auth()->user()->isS1();
+@endphp
 
 <div class="app-shell" style="flex-direction: column;">
 
@@ -62,7 +65,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <div>
                     <div class="page-title">Cadet Details</div>
-                    <div class="page-subtitle">Full profile and approval actions</div>
+                    <div class="page-subtitle">{{ $isS1 ? 'Full profile and approval actions' : 'Full cadet profile' }}</div>
                 </div>
                 <a href="{{ route('admin.cadets.index') }}" class="btn-green">← Back to List</a>
             </div>
@@ -83,9 +86,11 @@
                             {{ $user->cadet?->last_name }}, {{ $user->cadet?->first_name }}
                         </div>
                         <div style="font-size:12px; color:#666; margin:4px 0;">{{ $user->username }}</div>
-                        <span class="status-badge status-{{ $user->status }}" style="margin-top:8px; display:inline-block;">
-                            {{ ucfirst($user->status) }}
-                        </span>
+                       @if($isS1)
+                            <span class="status-badge status-{{ strtolower($user->status) }}" style="margin-top:8px; display:inline-block;">
+                                {{ ucfirst($user->status) }}
+                            </span>
+                        @endif
 
                         <div style="margin-top:16px; font-size:12px; color:#666;">Student No.</div>
                         <div style="font-size:13px; font-weight:600;">{{ $user->cadet?->student_number ?? '—' }}</div>
@@ -106,7 +111,7 @@
                     <div class="card">
 
                         {{-- Approve/Reject form (only if pending) --}}
-                        @if($user->status === 'pending')
+                       @if($isS1 && $user->status === 'pending')
                         <div style="background:#fdf8e1; border:1px solid #e8c440; border-radius:8px; padding:16px; margin-bottom:20px;">
                             <div style="font-weight:700; font-size:14px; margin-bottom:12px; color:#9a7b1a;">
                                 ⏳ Pending Approval
@@ -193,7 +198,7 @@
                         @endif  {{-- closes beneficiary @if --}}
 
                                              {{-- Rank & Company assignment --}}
-@if(auth()->user()->role === 'admin')
+@if($isS1)
 <div class="section-title">Rank &amp; Company Assignment</div>
 <form method="POST" action="{{ route('admin.cadets.rank-company', $user) }}">
     @csrf
@@ -283,4 +288,5 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 </body>
+
 </html>

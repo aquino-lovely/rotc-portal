@@ -46,13 +46,21 @@
 
             <div class="card">
                 <div class="search-row">
-                    <form method="GET" action="{{ route('admin.serial.index') }}"
-                          style="display:flex; gap:10px; flex:1;">
-                        <input type="text" name="search" class="search-input"
-                               placeholder="Search by name, student number, serial number"
-                               value="{{ request('search') }}">
-                        <button type="submit" class="btn-green">Search</button>
-                    </form>
+                   <form method="GET" action="{{ route('admin.serial.index') }}"
+      style="display:flex; gap:10px; flex:1;">
+
+    <select name="school_year" class="search-input" style="max-width:180px;" onchange="this.form.submit()">
+        <option value="all" @selected($schoolYear === 'all')>All batches</option>
+        @foreach($schoolYears as $sy)
+            <option value="{{ $sy }}" @selected($schoolYear === $sy)>S.Y. {{ $sy }}</option>
+        @endforeach
+    </select>
+
+    <input type="text" name="search" class="search-input"
+           placeholder="Search by name, student number, serial number"
+           value="{{ request('search') }}">
+    <button type="submit" class="btn-green">Search</button>
+</form>
                 </div>
 
                 <form method="POST" action="{{ route('admin.serial.update') }}">

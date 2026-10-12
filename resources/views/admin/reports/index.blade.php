@@ -62,36 +62,81 @@
                         <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
                             Report Type
                         </label>
-                        <select name="report_type" required
-                                style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-                            <option value="attendance" @selected(old('report_type') == 'attendance')>Attendance Report</option>
-                            <option value="grades" @selected(old('report_type') == 'grades')>Grades Report</option>
-                            <option value="enrollment" @selected(old('report_type') == 'enrollment')>Enrollment Report</option>
-                        </select>
-                    </div>
+                     @php $isGma = auth()->user()->role === 'GMA'; @endphp
 
-                    {{-- Attendance: semester + Saturday training day --}}
-                    <div style="margin-bottom:16px;" id="attendance-field">
-                        <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
-                            Semester / School Year
-                        </label>
-                        <select name="attendance_setting_id"
-                                style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-                            <option value="">— Select —</option>
-                            @foreach($enrollmentSettings as $s)
-                                <option value="{{ $s->id }}" @selected(old('attendance_setting_id') == $s->id)>
-                                    {{ $s->school_year }} - {{ $s->semester }}
-                                </option>
-                            @endforeach
-                        </select>
+                <select name="report_type" required
+                        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+                    @unless($isGma)
+                        <option value="attendance" @selected(old('report_type') == 'attendance')>Attendance Report</option>
+                    @endunless
+                    <option value="classlist" @selected(old('report_type') == 'classlist')>Class List</option>
+                    @unless($isGma)
+                        <option value="enrollment" @selected(old('report_type') == 'enrollment')>Enrollment Report</option>
+                        <option value="grades" @selected(old('report_type') == 'grades')>Grades Report</option>
+                    @endunless
+                    <option value="performance" @selected(old('report_type') == 'performance')>Physical Fitness Report</option>
+                </select>
 
-                        <label style="display:block; font-weight:600; font-size:13px; margin:12px 0 6px;">
-                            Training Day (Saturday)
-                        </label>
-                        <input type="date" name="training_day" id="training_day" value="{{ old('training_day') }}"
-                               style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-                        <small style="color:#777;">Leave blank to include all Saturdays in the semester.</small>
-                    </div>
+                   {{-- Attendance --}}
+<div style="margin-bottom:16px;" id="attendance-field">
+    <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
+        Attendance Type
+    </label>
+    <select name="attendance_type" id="attendance_type"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+        <option value="training_day" @selected(old('attendance_type') == 'training_day')>Training Day</option>
+        <option value="semestral" @selected(old('attendance_type') == 'semestral')>Semestral Attendance</option>
+    </select>
+
+    <label style="display:block; font-weight:600; font-size:13px; margin:12px 0 6px;">
+        Semester / School Year
+    </label>
+    <select name="attendance_setting_id"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+        <option value="">— Select —</option>
+       @foreach($enrollmentSettings as $s)
+    <option value="{{ $s->id }}"
+            data-start="{{ $s->class_start_date ? \Carbon\Carbon::parse($s->class_start_date)->format('Y-m-d') : '' }}"
+            data-end="{{ $s->class_end_date ? \Carbon\Carbon::parse($s->class_end_date)->format('Y-m-d') : '' }}"
+            @selected(old('attendance_setting_id') == $s->id)>
+        {{ $s->school_year }} - {{ $s->semester }}
+    </option>
+@endforeach
+    </select>
+
+    <div id="training-day-wrap">
+        <label style="display:block; font-weight:600; font-size:13px; margin:12px 0 6px;">
+            Training Day (Saturday)
+        </label>
+        <input type="date" name="training_day" id="training_day" value="{{ old('training_day') }}"
+               style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+    </div>
+</div>
+
+                    {{-- Class List: semester + instructor --}}
+<div style="margin-bottom:16px; display:none;" id="classlist-field">
+    <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
+        Semester / School Year
+    </label>
+    <select name="classlist_setting_id"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+        <option value="">— Select —</option>
+       @foreach($enrollmentSettings as $s)
+    <option value="{{ $s->id }}"
+            data-start="{{ $s->class_start_date ? \Carbon\Carbon::parse($s->class_start_date)->format('Y-m-d') : '' }}"
+            data-end="{{ $s->class_end_date ? \Carbon\Carbon::parse($s->class_end_date)->format('Y-m-d') : '' }}"
+            @selected(old('attendance_setting_id') == $s->id)>
+        {{ $s->school_year }} - {{ $s->semester }}
+    </option>
+@endforeach
+    </select>
+
+    <label style="display:block; font-weight:600; font-size:13px; margin:12px 0 6px;">
+        Professor / Instructor (optional)
+    </label>
+    <input type="text" name="classlist_professor" value="{{ old('classlist_professor') }}" placeholder="e.g. Juan Dela Cruz"
+           style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+</div>
 
                     {{-- Enrollment: date range --}}
                     <div style="margin-bottom:16px; display:none;" id="date-range-field">
@@ -126,6 +171,22 @@
                         </label>
                         <input type="text" name="professor" value="{{ old('professor') }}" placeholder="e.g. Juan Dela Cruz"
                                style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+                    </div>
+
+                                        {{-- Physical Fitness: semester --}}
+                    <div style="margin-bottom:16px; display:none;" id="performance-field">
+                        <label style="display:block; font-weight:600; font-size:13px; margin-bottom:6px;">
+                            Semester / School Year
+                        </label>
+                        <select name="performance_setting_id"
+                                style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+                            <option value="">— Select —</option>
+                            @foreach($enrollmentSettings as $s)
+                                <option value="{{ $s->id }}" @selected(old('performance_setting_id') == $s->id)>
+                                    {{ $s->school_year }} - {{ $s->semester }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     {{-- Enrollment: administering officer --}}
@@ -163,16 +224,41 @@
     const reportType      = document.querySelector('[name="report_type"]');
     const settingField    = document.getElementById('setting-field');
     const attendanceField = document.getElementById('attendance-field');
+    const classlistField  = document.getElementById('classlist-field');
     const dateField       = document.getElementById('date-range-field');
     const officerField    = document.getElementById('administering-officer-field');
     const trainingDay     = document.getElementById('training_day');
+    const attendanceType  = document.getElementById('attendance_type');
+    const trainingWrap    = document.getElementById('training-day-wrap');
+    const attSetting      = document.querySelector('[name="attendance_setting_id"]');
+    const performanceField = document.getElementById('performance-field');
 
     function toggleFields() {
         const type = reportType.value;
         settingField.style.display    = type === 'grades' ? 'block' : 'none';
         attendanceField.style.display = type === 'attendance' ? 'block' : 'none';
+        classlistField.style.display  = type === 'classlist' ? 'block' : 'none';
         dateField.style.display       = type === 'enrollment' ? 'block' : 'none';
         officerField.style.display    = type === 'enrollment' ? 'block' : 'none';
+        performanceField.style.display = type === 'performance' ? 'block' : 'none';
+
+        // Date picker only for Training Day
+        trainingWrap.style.display = attendanceType.value === 'training_day' ? 'block' : 'none';
+        if (attendanceType.value !== 'training_day') {
+            trainingDay.value = '';
+        }
+    }
+
+    // Limit the date picker to the class start and end dates
+    function applyRange() {
+        const o = attSetting.selectedOptions[0];
+        trainingDay.min = o ? (o.dataset.start || '') : '';
+        trainingDay.max = o ? (o.dataset.end || '') : '';
+        if (trainingDay.value &&
+            ((trainingDay.min && trainingDay.value < trainingDay.min) ||
+             (trainingDay.max && trainingDay.value > trainingDay.max))) {
+            trainingDay.value = '';
+        }
     }
 
     // Saturday only
@@ -184,7 +270,11 @@
     });
 
     reportType.addEventListener('change', toggleFields);
+    attendanceType.addEventListener('change', toggleFields);
+    attSetting.addEventListener('change', applyRange);
+
     toggleFields();
+    applyRange();
 </script>
 
 </body>

@@ -6,14 +6,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-
 
 class StaffAccountController extends Controller
 {
     public function index()
     {
-        $staffAccounts = User::whereIn('role', ['admin', 'S1', 'GMA'])->get();
+        $staffAccounts = User::whereIn('role', ['deputy_s1', 'S1', 'GMA'])->get();
         return view('superadmin.staff-index', compact('staffAccounts'));
     }
 
@@ -26,9 +24,9 @@ class StaffAccountController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'email'    => ['required', 'email', 'unique:users,email'],
-            'role'     => ['required', Rule::in(['admin', 'S1', 'GMA'])],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role'     => ['required', 'in:deputy_s1,S1,GMA'],
         ]);
 
         $tempPassword = Str::random(10);
@@ -56,27 +54,5 @@ class StaffAccountController extends Controller
         $staff->delete();
 
         return back()->with('success', 'Staff account deleted successfully.');
-
-    }}
-
-
-     /* public function resetPassword(User $user)
-    {
-        $tempPassword = Str::password(12);
-
-        $user->update([
-            'password' => Hash::make($tempPassword),
-        ]);
-
-        // Optional: log the action for accountability
-        ActivityLog::create([
-            'action'      => 'password_reset',
-            'target_user' => $user->username,
-         //   'performed_by'=> auth()->user()->username,
-            'created_at'  => now(),
-        //]);
-
-        return redirect()->route('staff.index')
-            ->with('success', "Password reset for {$user->name}. New temporary password: {$tempPassword}");
     }
-}*/
+}

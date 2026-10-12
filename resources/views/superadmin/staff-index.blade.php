@@ -53,7 +53,30 @@
             border-radius: 16px; font-size: 13px; text-decoration: none;
         }
         .edit-link:hover { background: #255525; }
-    </style>
+
+                            .layout { display: flex; min-height: calc(100vh - 78px); }
+                        .sidebar {
+                            width: 230px;
+                            flex-shrink: 0;
+                            background: #2f5a31;
+                            padding: 20px 10px;
+                        }
+                        .sidebar a {
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            padding: 12px 16px;
+                            margin-bottom: 6px;
+                            border-radius: 6px;
+                            color: #fff;
+                            text-decoration: none;
+                            font-size: 14px;
+                            font-weight: bold;
+                        }
+                        .sidebar a:hover { background: rgba(255, 255, 255, 0.15); }
+                        .sidebar a.active { background: #6b9a6d; color: #fff; }
+                        .staff-wrap { flex: 1; }
+                            </style>
 </head>
 <body>
 
@@ -74,7 +97,12 @@
         </div>
     </div>
 
-    <div class="staff-wrap">
+       <div class="layout">
+   
+
+      @include('partials.sidebar')
+
+    <div class="staff-wrap"> 
         <div class="staff-title">Staff Accounts</div>
 
         @if(session('success'))
@@ -104,8 +132,8 @@
                     </td>
                 </tr>
             @endforeach
-        </table>
+               </table>
+    </div>
     </div>
 
 </body>
-</html>

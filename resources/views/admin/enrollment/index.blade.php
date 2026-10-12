@@ -45,9 +45,11 @@
                     <div class="page-title">Enrollment Processing</div>
                     <div class="page-subtitle">Review and process cadet enrollment applications</div>
                 </div>
+                @if(auth()->user()->role === 'S1')
                 <a href="{{ route('admin.enrollment.settings') }}" class="btn-green">
                     ⚙ Enrollment Settings
                 </a>
+                @endif
             </div>
 
             @if($setting)

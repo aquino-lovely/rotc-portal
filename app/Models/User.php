@@ -61,10 +61,10 @@ class User extends Authenticatable
             return $this->role === 'GMA';
         }
 
-        public function isS1(): bool
-        {
-            return $this->role === 'S1';
-        }
+       public function isS1(): bool
+{
+    return in_array($this->role, ['S1', 'deputy_s1'], true);
+}
 
     public function enrollments()
     {

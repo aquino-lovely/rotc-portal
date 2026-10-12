@@ -29,6 +29,7 @@ Route::get('/dashboard', function () {
         'super_admin' => redirect()->route('staff.index'),
         'admin'       => redirect()->route('admin.dashboard'),
         'S1'          => redirect()->route('s1.dashboard'),
+        'Deputy S1'   => redirect()->route('s1.dashboard'),
         'GMA'         => redirect()->route('gma.dashboard'),
         default => app(CadetDashboardController::class)->index(request()),    };
 })->name('dashboard');
@@ -52,17 +53,37 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
-// Admin-only routes
+/* Admin-only routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/serial-numbers', [SerialNumberController::class, 'index'])->name('admin.serial.index');
-    Route::post('/serial-numbers', [SerialNumberController::class, 'update'])->name('admin.serial.update');
        Route::post('/enrollment/manual/{user}', [AdminEnrollmentController::class, 'enrollManually'])->name('admin.enrollment.manual');
     Route::post('/enrollment-settings/{setting}/finalize', [AdminEnrollmentController::class, 'finalizeTerm'])->name('admin.enrollment.settings.finalize');
 Route::post('/enrollment-settings/{setting}/unfinalize', [AdminEnrollmentController::class, 'unfinalizeTerm'])->name('admin.enrollment.settings.unfinalize');
-    
+  
 });
-Route::middleware(['auth', 'role:admin,S1'])->prefix('admin')->group(function () {
+*/
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+    Route::get('/staff', [StaffAccountController::class, 'index'])->name('staff.index');
+    Route::get('/staff/create', [StaffAccountController::class, 'create'])->name('staff.create');
+    Route::post('/staff', [StaffAccountController::class, 'store'])->name('staff.store');
+    Route::delete('/staff/{staff}', [StaffAccountController::class, 'destroy'])->name('staff.destroy');
+    Route::post('/staff/{user}/reset-password', [StaffAccountController::class, 'resetPassword'])->name('staff.reset-password');
+});
+
+Route::middleware(['auth', 'role:S1'])->prefix('admin')->group(function () {
+    Route::post('/enrollment/manual/{user}', [AdminEnrollmentController::class, 'enrollManually'])->name('admin.enrollment.manual');
+    Route::post('/enrollment-settings/{setting}/finalize', [AdminEnrollmentController::class, 'finalizeTerm'])->name('admin.enrollment.settings.finalize');
+    Route::post('/enrollment-settings/{setting}/unfinalize', [AdminEnrollmentController::class, 'unfinalizeTerm'])->name('admin.enrollment.settings.unfinalize');
+    Route::post('/enrollment/{enrollment}/finalize', [AdminEnrollmentController::class, 'finalize'])->name('admin.enrollment.finalize');
+    Route::post('/enrollment/{enrollment}/reject', [AdminEnrollmentController::class, 'reject'])->name('admin.enrollment.reject');
+    Route::get('/enrollment-settings', [AdminEnrollmentController::class, 'settings'])->name('admin.enrollment.settings');
+    Route::put('/enrollment-settings/{setting}', [AdminEnrollmentController::class, 'updateSetting'])->name('admin.enrollment.settings.update');
+    Route::post('/enrollment-settings', [AdminEnrollmentController::class, 'saveSettings'])->name('admin.enrollment.settings.save');
+
+    });
+
+Route::middleware(['auth', 'role:deputy_s1,S1'])->prefix('admin')->group(function () {
+     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/cadets', [CadetProfileController::class, 'index'])->name('admin.cadets.index');
     Route::get('/cadets/{user}', [CadetProfileController::class, 'show'])->name('admin.cadets.show');
     Route::post('/cadets/{user}/approve', [CadetProfileController::class, 'approve'])->name('admin.cadets.approve');
@@ -75,18 +96,22 @@ Route::middleware(['auth', 'role:admin,S1'])->prefix('admin')->group(function ()
     Route::get('/excuse-requests', [AttendanceController::class, 'excuseRequests'])->name('admin.attendance.excuses');
     Route::post('/excuse-requests/{excuseRequest}/approve', [AttendanceController::class, 'approveExcuse'])->name('admin.attendance.excuses.approve');
     Route::post('/excuse-requests/{excuseRequest}/reject', [AttendanceController::class, 'rejectExcuse'])->name('admin.attendance.excuses.reject');
-     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
-    Route::post('/reports/generate', [ReportController::class, 'generate'])->name('admin.reports.generate');
-});
-
-
-// QR Attendance — admin, GMA, AND S1 (only definition, dupe removed)
-Route::middleware(['auth', 'role:admin,GMA,S1'])->prefix('admin')->group(function () {
-    Route::get('/performance', [PerformanceController::class, 'index'])->name('admin.performance.index');
-    Route::get('/qr-attendance', [QrAttendanceController::class, 'index'])->name('admin.qr.index');
+     Route::get('/qr-attendance', [QrAttendanceController::class, 'index'])->name('admin.qr.index');
     Route::post('/qr-attendance/generate', [QrAttendanceController::class, 'generate'])->name('admin.qr.generate');
     Route::post('/qr-attendance/close', [QrAttendanceController::class, 'close'])->name('admin.qr.close');
     Route::get('/qr-attendance/scans', [QrAttendanceController::class, 'scans'])->name('admin.qr.scans');
+});
+
+// Reports: super admin, S1, deputy S1
+Route::middleware(['auth', 'role:super_admin,S1,deputy_s1,GMA'])->prefix('admin')->group(function () {
+    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
+    Route::post('/reports/generate', [ReportController::class, 'generate'])->name('admin.reports.generate');
+});
+    
+
+// QR Attendance — admin, GMA, AND S1 (only definition, dupe removed)
+Route::middleware(['auth', 'role:admin,GMA,S1,deputy_s1'])->prefix('admin')->group(function () {
+    Route::get('/performance', [PerformanceController::class, 'index'])->name('admin.performance.index');
 });
 
 Route::middleware(['auth', 'force.password'])->group(function () {
@@ -113,24 +138,16 @@ Route::middleware(['auth', 'force.password', 'role:S1'])->group(function () {
 });
 
 // Admin enrollment routes — admin AND S1
-Route::middleware(['auth', 'role:admin,S1'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'role:admin,S1,deputy_s1'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/enrollment', [AdminEnrollmentController::class, 'index'])->name('admin.enrollment.index');
     Route::get('/enrollment/{enrollment}', [AdminEnrollmentController::class, 'show'])->name('admin.enrollment.show');
-    Route::post('/enrollment/{enrollment}/finalize', [AdminEnrollmentController::class, 'finalize'])->name('admin.enrollment.finalize');
-    Route::post('/enrollment/{enrollment}/reject', [AdminEnrollmentController::class, 'reject'])->name('admin.enrollment.reject');
-    Route::get('/enrollment-settings', [AdminEnrollmentController::class, 'settings'])->name('admin.enrollment.settings');
-    Route::put('/enrollment-settings/{setting}', [AdminEnrollmentController::class, 'updateSetting'])->name('admin.enrollment.settings.update');
-    Route::post('/enrollment-settings', [AdminEnrollmentController::class, 'saveSettings'])->name('admin.enrollment.settings.save');
     Route::post('/performance/quizzes', [PerformanceController::class, 'saveQuizzes'])->name('admin.performance.saveQuizzes');
     Route::post('/performance/quizzes/add', [PerformanceController::class, 'addQuiz'])->name('admin.performance.addQuiz');
+     Route::get('/serial-numbers', [SerialNumberController::class, 'index'])->name('admin.serial.index');
+     Route::post('/serial-numbers', [SerialNumberController::class, 'update'])->name('admin.serial.update');
     Route::post('/performance/grades', [PerformanceController::class, 'saveGrades'])->name('admin.performance.saveGrades');
 });
 
-Route::middleware(['auth', 'role:super_admin'])->group(function () {
-    Route::get('/staff', [StaffAccountController::class, 'index'])->name('staff.index');
-    Route::get('/staff/create', [StaffAccountController::class, 'create'])->name('staff.create');
-    Route::post('/staff', [StaffAccountController::class, 'store'])->name('staff.store');
-    Route::delete('/staff/{staff}', [StaffAccountController::class, 'destroy'])->name('staff.destroy');     
-     Route::post('/staff/{user}/reset-password', [StaffAccountController::class, 'resetPassword'])->name('staff.reset-password');
-});
+
 

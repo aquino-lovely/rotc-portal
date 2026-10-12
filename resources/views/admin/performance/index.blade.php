@@ -1,3 +1,5 @@
+@php $viewOnly = in_array(auth()->user()->role, ['S1', 'deputy_s1']); @endphp
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -250,7 +252,7 @@
 
                    <form method="POST" action="{{ route('admin.performance.savePft') }}">
                     @csrf
-                    @if(auth()->user()->role === 'S1')
+                    @if($viewOnly)
                         <p style="color:#666; font-size:13px; margin-bottom:12px;">&#128065; View only — Physical Fitness scores are managed by GMA.</p>
                     @endif
                         @csrf
@@ -281,7 +283,7 @@
                                     <input type="number" step="0.01"
                                         name="pft[{{ $cadet->id }}][run_time]"
                                         value="{{ $pft?->run_time }}"
-                                        @if(auth()->user()->role === 'S1') disabled @endif>
+                                      @if($viewOnly) disabled @endif
                                 </td>
                                     <td>
                                         @if($pft?->run_pass !== null)
@@ -332,8 +334,7 @@
                                 @endforelse
                             </tbody>
                         </table>
-
-                @if(auth()->user()->role !== 'S1')
+                @if(! $viewOnly)
                     <div style="display:flex; justify-content:flex-end; margin-top:16px;">
                         <button type="submit" class="btn-green">Save Changes</button>
                     </div>
